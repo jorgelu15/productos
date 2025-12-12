@@ -1,0 +1,30 @@
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    gap: 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    justify-content: flex-start;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.breadcrumb a:hover {
+    color: var(--info);
+}
+
+
+.breadcrumb .current {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+span {
+    color: var(--text-muted);
+}
