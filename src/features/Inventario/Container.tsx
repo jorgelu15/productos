@@ -29,7 +29,7 @@ const menuItems = [
 ];
 
 const Container = () => {
-  const { productosQuery, deleteProductoMutation } = useInventario(); // <- asegúrate de tener esta mutation
+  const { productosQuery, deleteProductoMutation } = useInventario();
   const productos: ProductoRepository[] = productosQuery?.data || [];
 
   const navigate = useNavigate();
@@ -77,7 +77,23 @@ const Container = () => {
     // opcional: setSelectedProduct(null as any);
   };
 
-  const confirmDelete = async () => {
+  const headers = ["Código", "Nombre", "Descripción", "Marca", "Categoría", "Precio", "Acciones"];
+
+  const filteredRows = useMemo(() => {
+    const query = form.query.toLowerCase();
+    if (!query) return productos;
+
+    return productos.filter((row: ProductoRepository) => {
+      return Object.values(row).some((value) => {
+        const text = String(value ?? "").toLowerCase();
+        if (text.includes(query)) return true;
+        const similarity = stringSimilarity.compareTwoStrings(text, query);
+        return similarity > 0.8;
+      });
+    });
+  }, [form.query, productos]);
+
+  const confirmDelete = () => {
     if (!selectedProduct) {
       toast.error("No hay producto seleccionado para eliminar");
       return;
@@ -94,41 +110,26 @@ const Container = () => {
       return;
     }
 
-    try {
-      // ✅ aquí llamas tu mutation
-      await deleteProductoMutation.mutateAsync(id_producto);
+    // ✅ Cierra el modal SOLO cuando el delete fue exitoso (onSuccess)
+    (deleteProductoMutation as any).mutate(id_producto, {
+      onSuccess: () => {
+        toast.success("Producto eliminado correctamente");
+        closeDeleteConfirmModal();
 
-      toast.success("Producto eliminado correctamente");
-      closeDeleteConfirmModal();
-
-      // Si tu mutation no invalida queries internamente:
-      // productosQuery.refetch?.();
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.error ||
-        err?.message ||
-        "Error eliminando producto";
-      toast.error(msg);
-    }
-  };
-
-  const headers = ["Código", "Nombre", "Descripción", "Marca", "Categoría", "Precio", "Acciones"];
-
-  const filteredRows = useMemo(() => {
-    const query = form.query.toLowerCase();
-    if (!query) return productos;
-
-    return productos.filter((row: ProductoRepository) => {
-      return Object.values(row).some((value) => {
-        const text = String(value ?? "").toLowerCase();
-        if (text.includes(query)) return true;
-        const similarity = stringSimilarity.compareTwoStrings(text, query);
-        return similarity > 0.8;
-      });
+        // Si tu mutation no invalida queries internamente:
+        // productosQuery.refetch?.();
+      },
+      onError: (err: any) => {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.error ||
+          err?.message ||
+          "Error eliminando producto";
+        toast.error(msg);
+      },
     });
-  }, [form.query, productos]);
+  };
 
   return (
     <div className="container">
@@ -231,7 +232,11 @@ const Container = () => {
             size="sm"
             footer={
               <div className={style.modal_footer_actions}>
-                <button className="btn btn_secondary" onClick={closeDeleteConfirmModal} disabled={isDeleting}>
+                <button
+                  className="btn btn_secondary"
+                  onClick={closeDeleteConfirmModal}
+                  disabled={isDeleting}
+                >
                   No
                 </button>
                 <button className="btn btn_primary" onClick={confirmDelete} disabled={isDeleting}>
@@ -242,12 +247,10 @@ const Container = () => {
           >
             <div style={{ padding: 10 }}>
               <p style={{ marginBottom: 8 }}>
-                ¿Seguro que deseas eliminar el producto{" "}
-                <b>{selectedProduct.nombre}</b> ({selectedProduct.codigo})?
+                ¿Seguro que deseas eliminar el producto <b>{selectedProduct.nombre}</b> (
+                {selectedProduct.codigo})?
               </p>
-              <p style={{ opacity: 0.8, fontSize: 13 }}>
-                Esta acción no se puede deshacer.
-              </p>
+              <p style={{ opacity: 0.8, fontSize: 13 }}>Esta acción no se puede deshacer.</p>
             </div>
           </Modal>
         )}
