@@ -17,7 +17,7 @@ import CreateProductoModal from "./Modals/CrearProducto.modal";
 import SkeletonTable from "../../components/skeleton/SkeletonTable";
 import UpdateProductoModal from "./Modals/UpdateProducto.modal";
 import Modal from "../../components/modales/Modal";
-import { toast } from "react-toastify";
+import { Bounce, toast, ToastContainer } from "react-toastify";
 
 const items = [
   { label: "Dashboard", href: routes.dashboard },
@@ -29,8 +29,9 @@ const menuItems = [
 ];
 
 const Container = () => {
-  const { productosQuery, deleteProductoMutation } = useInventario();
+  const { productosQuery, categoriasQuery, deleteProductoMutation } = useInventario();
   const productos: ProductoRepository[] = productosQuery?.data || [];
+  const categorias = categoriasQuery?.data || [];
 
   const navigate = useNavigate();
   const { form, onChangeGeneral } = useForm({ query: "" });
@@ -111,13 +112,10 @@ const Container = () => {
     }
 
     // ✅ Cierra el modal SOLO cuando el delete fue exitoso (onSuccess)
-    (deleteProductoMutation as any).mutate(id_producto, {
+    deleteProductoMutation.mutate(id_producto, {
       onSuccess: () => {
         toast.success("Producto eliminado correctamente");
         closeDeleteConfirmModal();
-
-        // Si tu mutation no invalida queries internamente:
-        // productosQuery.refetch?.();
       },
       onError: (err: any) => {
         const msg =
@@ -172,7 +170,7 @@ const Container = () => {
                   row.nombre,
                   row.descripcion,
                   row.marca,
-                  (row as any)?.categoria?.nombre ?? (row as any)?.categoria_nombre ?? row.categoria_id,
+                  categorias.find((cat: any) => cat.id_categoria === row.categoria_id).nombre ?? "",
                   row.precio,
                 ];
 
@@ -255,6 +253,15 @@ const Container = () => {
           </Modal>
         )}
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        closeOnClick={false}
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
     </div>
   );
 };

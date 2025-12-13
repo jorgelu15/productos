@@ -31,8 +31,6 @@ const CreateProductoModal = ({
   const { createProductoMutation, categoriasQuery } = useInventario();
   const { form, onChangeGeneral, setState } = useForm(initialFormState);
 
-  const isCreating =
-    (createProductoMutation as any).isPending ?? (createProductoMutation as any).isLoading ?? false;
 
   const categorias: Categoria[] = (categoriasQuery.data || []) as Categoria[];
 
@@ -52,6 +50,11 @@ const CreateProductoModal = ({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!form.codigo || !form.nombre || !form.precioVenta || !form.categoriaId) {
+      toast.error("Todos los campos son obligatorios");
+      return;
+    }
 
     const precio = Number(form.precioVenta);
     if (!Number.isFinite(precio) || precio <= 0) {
@@ -79,19 +82,18 @@ const CreateProductoModal = ({
       precio,
     };
 
-    try {
-      const response: any = await createProductoMutation.mutateAsync(producto);
-      toast.success(response?.data?.message ?? "Producto creado correctamente");
-      closeModal();
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.error ||
-        err?.message ||
-        "Error creando producto";
-      toast.error(msg);
-    }
+    createProductoMutation.mutate(producto, {
+      onSuccess: (response: any) => {
+        toast.success(response?.message);
+        closeModal();
+      },
+      onError: (err: any) => {
+        console.log(err.response)
+        toast.error(err.response.data.error);
+      },
+    })
+
+
   };
 
   return (
@@ -102,12 +104,12 @@ const CreateProductoModal = ({
       size="md"
       footer={
         <div className={style.modal_footer_actions}>
-          <button className="btn btn_secondary" type="button" onClick={closeModal} disabled={isCreating}>
+          <button className="btn btn_secondary" type="button" onClick={closeModal}>
             Cancelar
           </button>
 
-          <button className="btn btn_primary" type="submit" form="create-product-form" disabled={isCreating}>
-            {isCreating ? "Creando Producto..." : "Crear Producto"}
+          <button className="btn btn_primary" type="submit" form="create-product-form">
+            Crear producto
           </button>
         </div>
       }
@@ -166,8 +168,6 @@ const CreateProductoModal = ({
           placeholder={placeholder}
           value={form[name] as string}
           onChange={(e) => onChangeGeneral(e, name)}
-          required
-          disabled={isCreating}
         />
       </div>
     );
@@ -188,15 +188,14 @@ const CreateProductoModal = ({
           name={name}
           value={form[name] as string}
           onChange={(e) => onChangeGeneral(e, name)}
-          required
-          disabled={isCreating || cfg?.loading || isEmpty}
+          disabled={cfg?.loading || isEmpty}
         >
           <option value="" disabled>
             {cfg?.loading
               ? "Cargando..."
               : isEmpty
-              ? cfg?.emptyText ?? "Sin opciones"
-              : `Seleccionar ${label.toLowerCase()}`}
+                ? cfg?.emptyText ?? "Sin opciones"
+                : `Seleccionar ${label.toLowerCase()}`}
           </option>
 
           {options.map((opt) => (

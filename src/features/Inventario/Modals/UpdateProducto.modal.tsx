@@ -58,9 +58,9 @@ const UpdateProductoModal = ({
       descripcion: String((selectedProduct as any).descripcion ?? ""),
       categoriaId: String(
         (selectedProduct as any).categoria_id ??
-          (selectedProduct as any).id_categoria ??
-          (selectedProduct as any).categoria?.id_categoria ??
-          ""
+        (selectedProduct as any).id_categoria ??
+        (selectedProduct as any).categoria?.id_categoria ??
+        ""
       ),
       marca: String((selectedProduct as any).marca ?? ""),
       precioVenta: String((selectedProduct as any).precio ?? (selectedProduct as any).precioVenta ?? ""),
@@ -116,19 +116,19 @@ const UpdateProductoModal = ({
       precio,
     };
 
-    try {
-      const response: any = await updateProductoMutation.mutateAsync(payload);
-      toast.success(response?.data?.message ?? "Producto actualizado correctamente");
-      closeModal();
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.error ||
-        err?.message ||
-        "Error actualizando producto";
-      toast.error(msg);
-    }
+    updateProductoMutation.mutate(payload, {
+      onSuccess: (response: any) => {
+        toast.success(response?.data?.message);
+        closeModal();
+      },
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message ||
+          err?.message ||
+          "Error actualizando producto"
+        );
+      },
+    });
   };
 
   return (
@@ -228,8 +228,8 @@ const UpdateProductoModal = ({
             {cfg?.loading
               ? "Cargando..."
               : isEmpty
-              ? cfg?.emptyText ?? "Sin opciones"
-              : `Seleccionar ${label.toLowerCase()}`}
+                ? cfg?.emptyText ?? "Sin opciones"
+                : `Seleccionar ${label.toLowerCase()}`}
           </option>
 
           {options.map((opt) => (

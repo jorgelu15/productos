@@ -2,74 +2,110 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../config/axios";
 import { useContext } from "react";
 import InventarioFisicoContext from "../context/InventarioFisico/InventarioFisicoContext";
-import type { CategoriaDTO } from "../models/dtos/categoria.dto";
+import type { CategoriaRepository } from "../models/Categoria.repository";
 
 export const useInventario = () => {
-    const { updateProducto, createProducto, createCategoria, deleteProducto }: any = useContext(InventarioFisicoContext);
+    const {
+        updateProducto,
+        createProducto,
+        deleteProducto,
+        createCategoria,
+        deleteCategoria,
+        updateCategoria
+    }: any = useContext(InventarioFisicoContext);
+
     const queryClient = useQueryClient();
 
+    /* =========================
+       FETCHERS
+    ========================== */
 
     const fetchProductos = async () => {
-        const res = await api.get(`/productos`);
+        const res = await api.get("/productos");
+        return res.data; // <-- debe ser ARRAY
+    };
+
+    const fetchCategorias = async () => {
+        const res = await api.get("/productos/categorias");
         return res.data;
     };
 
+    /* =========================
+       QUERIES
+    ========================== */
 
-    const fetchGetAllCategoriasByCliente = async () => {
-        const res = await api.get(`/productos/categorias`);
-        return res.data;
-    }
+    const productosQuery = useQuery({
+        queryKey: ["productos"], // ✅ KEY ÚNICA
+        queryFn: fetchProductos,
+        refetchOnWindowFocus: true,
+    });
 
     const categoriasQuery = useQuery({
         queryKey: ["categorias"],
-        queryFn: () => fetchGetAllCategoriasByCliente(), // Ya no recibe page
-        refetchOnWindowFocus: true
+        queryFn: fetchCategorias,
+        refetchOnWindowFocus: true,
     });
 
-    const productosQuery = useQuery({
-        queryKey: ["productos"],
-        queryFn: () => fetchProductos(), // Ya no recibe page
-        refetchOnWindowFocus: true
-    });
+    /* =========================
+       MUTATIONS
+    ========================== */
 
-
-
-    //mutarions
-    const createCategoriaMutation = useMutation({
-        mutationFn: (categoria: CategoriaDTO) => createCategoria(categoria),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["categorias"] });
-        }
-    });
+    
 
     const createProductoMutation = useMutation({
         mutationFn: (producto: any) => createProducto(producto),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["productos"] });
-        }
+        },
     });
 
     const updateProductoMutation = useMutation({
         mutationFn: (producto: any) => updateProducto(producto),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["productos"] });
-        }
+        },
     });
 
     const deleteProductoMutation = useMutation({
-        mutationFn: (id_producto: any) => deleteProducto(id_producto),
+        mutationFn: (id_producto: number) => deleteProducto(id_producto),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["productos"] });
-        }
+        },
     });
 
+    const createCategoriaMutation = useMutation({
+        mutationFn: (categoria: CategoriaRepository) => createCategoria(categoria),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["categorias"] });
+        },
+    });
+
+    const updateCategoriaMutation = useMutation({
+        mutationFn: (categoria: CategoriaRepository) => updateCategoria(categoria),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["categorias"] });
+        },
+    });
+
+    const deleteCategoriaMutation = useMutation({
+        mutationFn: (id_categoria: number) => deleteCategoria(id_categoria),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["categorias"] });
+        },
+    });
+
+    /* =========================
+       EXPORT
+    ========================== */
 
     return {
         productosQuery,
         categoriasQuery,
-        updateProductoMutation,
         createProductoMutation,
+        updateProductoMutation,
+        deleteProductoMutation,
         createCategoriaMutation,
-        deleteProductoMutation
+        updateCategoriaMutation,
+        deleteCategoriaMutation
     };
 };
